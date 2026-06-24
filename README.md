@@ -233,6 +233,21 @@ scripts/security-scan.sh
 
 This scan must pass before public pushes. If a value is found in git history, fixing the current file is not enough; rewrite the history before pushing.
 
+Independent Codex review gate:
+
+```bash
+scripts/codex-review.sh
+```
+
+Project rule: Claude Code or another agent may implement changes, but OpenAI Codex must review meaningful updates before push or release. Review reports are written under `docs/reviews/`. The review checklist is maintained in [`docs/code-review.md`](docs/code-review.md) and should be updated whenever the review criteria change.
+
+Contribution workflow:
+
+- Read [`AGENTS.md`](AGENTS.md) first. It is the canonical guide for Claude Code, Codex, OpenCode, Hermes, OpenClaw, and other agents.
+- Use pull requests for changes to `main`.
+- `main` is protected with required maintainer approval and CI checks.
+- See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the public contribution flow.
+
 Check runs:
 
 ```bash

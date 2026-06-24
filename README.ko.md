@@ -233,6 +233,21 @@ scripts/security-scan.sh
 
 public push 전에는 반드시 이 검사를 통과해야 합니다. 현재 파일만 고치는 것으로 부족하고, git history에 남은 경우 history도 정리해야 합니다.
 
+독립 Codex 리뷰 게이트:
+
+```bash
+scripts/codex-review.sh
+```
+
+프로젝트 규칙: Claude Code 또는 다른 에이전트가 변경을 구현할 수 있지만, 의미 있는 업데이트는 push 또는 release 전에 OpenAI Codex가 독립 리뷰해야 합니다. 리뷰 리포트는 `docs/reviews/` 아래에 저장됩니다. 리뷰 체크리스트는 [`docs/code-review.md`](docs/code-review.md)에 유지하며, 리뷰 기준이 바뀔 때마다 함께 업데이트해야 합니다.
+
+기여 워크플로우:
+
+- 먼저 [`AGENTS.md`](AGENTS.md)를 읽으세요. Claude Code, Codex, OpenCode, Hermes, OpenClaw 및 기타 에이전트를 위한 canonical 가이드입니다.
+- `main` 변경은 pull request를 사용합니다.
+- `main`은 maintainer approval과 CI check가 필요한 protected branch입니다.
+- 공개 기여 흐름은 [`CONTRIBUTING.md`](CONTRIBUTING.md)를 참고하세요.
+
 체크 실행:
 
 ```bash

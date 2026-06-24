@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Conservative repository privacy/security scan.
-# Scans tracked files and, when available, git history for obvious secrets and personal paths.
+# Scans tracked + untracked worktree files and, when available, git history
+# for obvious secrets and personal paths.
 
 set -euo pipefail
 
@@ -11,12 +12,23 @@ PATTERN='(/Users/[A-Za-z0-9._-]+|/home/[A-Za-z0-9._-]+|gho_[A-Za-z0-9_]+|ghp_[A-
 
 fail=0
 
-echo "==> Scanning tracked files"
-if git grep -n -E -I "$PATTERN" -- . ':!scripts/security-scan.sh'; then
+echo "==> Scanning tracked and untracked worktree files"
+match_file="$(mktemp)"
+while IFS= read -r -d '' file; do
+  [[ "$file" == "scripts/security-scan.sh" ]] && continue
+  [[ -f "$file" ]] || continue
+  if grep -nHE -I "$PATTERN" "$file" >>"$match_file" 2>/dev/null; then
+    true
+  fi
+done < <(git ls-files -z --cached --others --exclude-standard)
+
+if [[ -s "$match_file" ]]; then
+  cat "$match_file"
   fail=1
 else
-  echo "No suspicious strings in tracked files."
+  echo "No suspicious strings in worktree files."
 fi
+rm -f "$match_file"
 
 echo
 if git rev-parse --git-dir >/dev/null 2>&1; then
@@ -35,4 +47,4 @@ if [[ "$fail" -ne 0 ]]; then
 fi
 
 echo
- echo "OK: privacy/security scan passed."
+echo "OK: privacy/security scan passed."

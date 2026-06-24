@@ -1,51 +1,175 @@
 # AGENTS.md
 
-이 저장소는 macOS 전용 업데이트 오케스트레이터입니다.
+This is the canonical operating guide for all agents and automation working in this repository.
 
-## 목표
+Read this first whether you are Claude Code, OpenAI Codex, OpenCode, Hermes, OpenClaw, Copilot, a CI harness, or another agentic coding tool. Tool-specific files such as `CLAUDE.md` must stay thin and defer to this file.
 
-사용자가 `mac-update-all` 하나로 맥북에 설치된 가능한 모든 업데이트를 실행하고, 결과를 CLI와 로그 파일에서 확인할 수 있어야 합니다.
+## Project mission
 
-## 원칙
+`mac-update-orchestrator` is a macOS-only update orchestrator.
 
-1. macOS만 지원합니다. Windows/Linux 호환성에 시간을 쓰지 않습니다.
-2. 안전한 package manager 경로를 우선합니다.
-   - Homebrew
-   - Mac App Store / mas
-   - npm/nvm/corepack/bun
-   - uv/pipx/pip user packages
-   - 개별 CLI updater
-3. macOS 시스템 영역을 sudo로 억지 수정하지 않습니다.
-4. standalone `.dmg`/`.pkg` GUI 앱 번들을 임의로 교체하지 않습니다.
-5. 실행 결과는 반드시 터미널과 로그에 남깁니다.
-6. 변경 단위마다 git commit을 남깁니다.
-7. 개인 홈 디렉토리, 계정명, 이메일, API key, token, secret-like 문자열을 커밋하지 않습니다.
-8. public push 전 `scripts/security-scan.sh`를 실행하고, 문제가 있으면 수정뿐 아니라 git history도 정리합니다.
+The user-facing goal is simple:
 
-## 검증
+> One command, `mac-update-all`, should update as much as possible on a MacBook and leave a clear CLI + log-file audit trail of what ran, what changed, and what failed.
 
-변경 후 최소 검증:
+Windows and Linux support are intentionally out of scope.
+
+## Public repository priorities
+
+This repository is public and should be safe for broad agent contribution.
+
+Priorities, in order:
+
+1. Preserve user trust and machine safety.
+2. Keep `mac-update-all` as the primary one-command UX.
+3. Make every update auditable through terminal output and log files.
+4. Keep install and contribution paths simple for public users.
+5. Require independent review before changes enter `main`.
+6. Avoid leaking local paths, private emails, tokens, API keys, or credentials.
+
+## Architecture
+
+- `bin/mac-update-all.command`
+  - Main one-command entry point.
+  - Runs software updates first, then the macOS system update flow.
+- `bin/software-update.command`
+  - Frequent software updates: Homebrew, App Store, Node/npm/nvm/bun/corepack, Python/uv/pipx/pip user packages, and AI/dev CLIs.
+- `bin/system-update.command`
+  - macOS `softwareupdate` only.
+- `bin/update-everything.command`
+  - Compatibility wrapper.
+- `install.sh`
+  - Installs symlinks into `~/.local/bin`.
+- `scripts/security-scan.sh`
+  - Scans tracked, untracked, and historical content for obvious personal paths and secrets.
+- `scripts/codex-review.sh`
+  - Runs the mandatory OpenAI Codex review gate.
+- `docs/code-review.md`
+  - Review process and checklist.
+- `docs/improvements.md`
+  - Design evolution and future improvements.
+- `docs/reviews/`
+  - Codex review reports for release, installer, security-sensitive, or workflow changes.
+- `.github/CODEOWNERS`
+  - Maintainer ownership for protected branch review.
+- `.github/workflows/checks.yml`
+  - Public CI checks that can run without private credentials.
+
+## Safety constraints
+
+Do not add behavior that:
+
+- forces macOS restart with `softwareupdate --restart`
+- uses `sudo` to mutate Apple-managed system tooling such as `/usr/bin/python3` or `/usr/bin/gem`
+- blindly replaces standalone `.app` bundles installed through `.dmg` / `.pkg`
+- automatically installs new pyenv Python versions without project compatibility checks
+- hides update failures
+- removes logging or makes failures silent
+
+Prefer package-manager-owned update paths:
+
+- Homebrew
+- Mac App Store / `mas`
+- npm / nvm / corepack / bun
+- uv / pipx / Python user packages
+- individual CLI self-updaters when they exist
+
+## Privacy and secret handling
+
+Never commit:
+
+- personal home directories, for example OS-specific absolute home paths
+- private emails
+- API keys
+- OAuth tokens
+- credentials
+- private keys
+- secret-like strings
+- generated logs that contain local environment details
+
+Before public push, run:
 
 ```bash
-bash -n bin/*.command install.sh
 scripts/security-scan.sh
+```
+
+If a suspicious value exists in git history, fixing only the current file is not enough. Rewrite history before pushing.
+
+## Required local checks
+
+Run these before committing meaningful changes:
+
+```bash
+bash -n bin/*.command install.sh scripts/*.sh
+scripts/security-scan.sh
+```
+
+For behavior changes, also run:
+
+```bash
 bin/software-update.command --check
 bin/system-update.command --check
 ./install.sh
 mac-update-all --help
 ```
 
-실제 업데이트 실행은 로컬 머신 상태를 변경합니다. 필요하면 `--check`부터 확인하세요.
+Do not run full update commands in CI. Full updates mutate the host machine and belong to local/manual execution.
 
-## 파일 구조
+## Independent review gate
 
-- `bin/mac-update-all.command`: 단일 진입점
-- `bin/software-update.command`: App Store, Brew, Python, Node, AI/dev CLI 등 일상 SW 업데이트
-- `bin/system-update.command`: macOS 시스템 업데이트
-- `bin/update-everything.command`: 호환용 래퍼
-- `install.sh`: `~/.local/bin`에 명령 설치
-- `docs/improvements.md`: 설계 변화와 향후 개선 기록
+Implementation may be done by Claude Code, OpenCode, Hermes, OpenClaw, Codex, or another agent.
 
-## 문서 스타일
+Meaningful changes must be reviewed independently by OpenAI Codex before push or release:
 
-한국어를 기본으로 작성합니다. 명령어, 파일명, 경로, 환경변수는 원문 그대로 둡니다.
+```bash
+scripts/codex-review.sh
+```
+
+If Codex returns `FAIL`, do not push until blocking issues are fixed or explicitly documented as accepted risk.
+
+The review checklist lives in `docs/code-review.md`. Update it whenever the review criteria change. `README.md` and `README.ko.md` must mention review workflow changes that affect contributors.
+
+## GitHub workflow
+
+`main` is protected.
+
+Expected contribution path:
+
+1. Create a branch.
+2. Make a focused change.
+3. Run local checks.
+4. Run `scripts/codex-review.sh` for meaningful changes.
+5. Commit in logical units.
+6. Open a pull request.
+7. Include the Codex review summary or report path in the PR.
+8. Wait for required maintainer approval and CI.
+9. Merge only after branch protection passes.
+
+Direct pushes to `main` are not the normal workflow after branch protection is enabled.
+
+## Documentation policy
+
+- `README.md` is English and is the default public README.
+- `README.ko.md` is Korean and must link back to `README.md`.
+- `CLAUDE.md` is intentionally thin and points Claude Code to this file.
+- Keep public-facing behavior documented in both READMEs.
+- Keep implementation/review rules in this file and `docs/code-review.md`.
+
+## Commit discipline
+
+Use small, logical commits:
+
+1. Scripts / behavior
+2. Installer
+3. Docs
+4. Workflow / CI
+5. Verification or cleanup
+
+Commit messages should be concise and descriptive.
+
+## Agent-specific notes
+
+- Claude Code: read `CLAUDE.md`, then follow this file.
+- Codex: use this file plus `docs/code-review.md` for review context.
+- Hermes/OpenCode/OpenClaw/other agents: treat this file as the source of truth.
+- CI/harnesses: run only non-mutating checks unless explicitly configured otherwise.

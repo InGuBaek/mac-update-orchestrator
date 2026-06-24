@@ -1,0 +1,23 @@
+name: checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  local-checks:
+    name: local-checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Syntax check shell scripts
+        run: bash -n bin/*.command install.sh scripts/*.sh
+
+      - name: Privacy/security scan
+        run: scripts/security-scan.sh
