@@ -1,35 +1,37 @@
 # mac-update-orchestrator
 
-커맨드 하나로 맥북에 설치된 업데이트를 최대한 한 번에 처리하고, 무엇이 업데이트됐는지 터미널 출력과 로그 파일로 확인하기 위한 macOS 전용 업데이트 오케스트레이터입니다.
+[한국어](README.ko.md)
 
-윈도우는 신경 쓰지 않습니다. macOS 로컬 개발 머신을 대상으로 합니다.
+A macOS-only update orchestrator that runs as many updates as possible with one command and shows what happened in both the CLI and timestamped log files.
 
-## 목표
+Windows is intentionally out of scope. This project targets local macOS development machines.
 
-macOS에서 업데이트 경로는 너무 많이 갈라져 있습니다.
+## Why this exists
+
+macOS updates are scattered across too many channels:
 
 - System Settings / `softwareupdate`
 - Mac App Store
-- Homebrew formula/cask
-- npm global / nvm
-- bun global
+- Homebrew formulae and casks
+- npm global packages / nvm
+- bun global packages
 - uv tools
 - pipx
 - Python user packages
-- 개별 CLI 자체 updater: Claude Code, Hermes, OpenCode 등
-- standalone `.dmg`/`.pkg` GUI 앱: LM Studio, Ollama 등
+- individual CLI self-updaters: Claude Code, Hermes, OpenCode, and others
+- standalone `.dmg` / `.pkg` GUI apps: LM Studio, Ollama, and others
 
-`mac-update-all`은 이 경로들을 한 번에 훑고, 가능한 업데이트를 실행하며, CLI와 로그 파일에 결과를 남깁니다.
+`mac-update-all` walks those paths, runs the updates it can safely run, and leaves an audit trail in the terminal and log files.
 
-## 설치
+## Install
 
-### 한 줄 설치
+### One-line install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/InGuBaek/mac-update-orchestrator/main/install.sh | bash
 ```
 
-### GitHub에서 직접 설치
+### Install from GitHub manually
 
 ```bash
 git clone https://github.com/InGuBaek/mac-update-orchestrator.git
@@ -37,7 +39,7 @@ cd mac-update-orchestrator
 ./install.sh
 ```
 
-설치 후 사용할 수 있는 명령:
+Installed commands:
 
 ```bash
 mac-update-all
@@ -46,143 +48,143 @@ mac-system-update
 mac-update-everything
 ```
 
-`~/.local/bin`이 PATH에 없다면 셸 설정에 추가하세요.
+If `~/.local/bin` is not in your `PATH`, add it to your shell profile:
 
 ```bash
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
-### 로컬 체크아웃에서 바로 실행
+### Run from a local checkout
 
 ```bash
 chmod +x bin/*.command install.sh
 bin/mac-update-all.command --help
 ```
 
-## 가장 중요한 명령
+## Main commands
 
-전체 업데이트:
+Run the full update flow:
 
 ```bash
 mac-update-all
 ```
 
-전체 업데이트 가능 항목 확인만:
+Check everything without updating:
 
 ```bash
 mac-update-all --check
 ```
 
-확인 질문에 가능한 한 yes로 답하고 진행:
+Answer yes where possible:
 
 ```bash
 mac-update-all --yes
 ```
 
-Ollama 모델까지 모두 pull:
+Also pull all installed Ollama models:
 
 ```bash
 mac-update-all --ollama-models
 ```
 
-Homebrew cleanup까지 포함:
+Also run Homebrew cleanup:
 
 ```bash
 mac-update-all --cleanup
 ```
 
-시스템 업데이트는 확인만 하고 SW 업데이트만 실제 실행:
+Run software updates, but only check macOS system updates:
 
 ```bash
 mac-update-all --system-check
 ```
 
-시스템 업데이트를 완전히 건너뛰고 SW만 업데이트:
+Skip macOS system updates entirely and only run software updates:
 
 ```bash
 mac-update-all --skip-system
 ```
 
-## 로그
+## Logs
 
-기본 로그 위치:
+Default log directory:
 
 ```text
 ~/Library/Logs/mac-update-orchestrator/
 ```
 
-각 실행마다 타임스탬프가 붙은 로그 파일이 생성됩니다.
+Each run creates timestamped log files:
 
 - `mac-update-all-YYYYMMDD-HHMMSS.log`
 - `software-update-YYYYMMDD-HHMMSS.log`
 - `system-update-YYYYMMDD-HHMMSS.log`
 
-로그 위치를 바꾸려면:
+To override the log directory:
 
 ```bash
 MAC_UPDATE_LOG_DIR="$HOME/Desktop/update-logs" mac-update-all
 ```
 
-## 명령 구성
+## Command layout
 
 ### `mac-update-all`
 
-사용자가 주로 쓰는 단일 진입점입니다.
+The main one-command entry point.
 
-기본 동작:
+Default flow:
 
-1. 일상 SW 업데이트 실행
-2. macOS 시스템 업데이트 설치 시도
-3. 각 단계 결과를 CLI와 로그에 출력
+1. Run daily software updates.
+2. Run the macOS system update flow.
+3. Print each step to the CLI and log files.
 
-강제 재시작은 하지 않습니다. macOS 설치나 권한 승인이 필요하면 실행 중 macOS 또는 CLI가 사용자 동의를 요청합니다.
+It does not force a restart. If macOS or a CLI needs approval, the running command asks for it normally.
 
 ### `mac-software-update`
 
-자주 실행할 SW 업데이트만 처리합니다.
+Runs the frequent software update path only.
 
 ```bash
 mac-software-update --check
 mac-software-update --update --install-helpers
 ```
 
-포함 범위:
+Coverage:
 
 - Homebrew
   - `brew update`
   - `brew upgrade --greedy`
-  - 선택적으로 `brew cleanup`
+  - optional `brew cleanup`
 - Mac App Store
   - `mas outdated`
   - `mas upgrade`
-  - `mas`가 없으면 `--install-helpers`로 설치 가능
-- Node 계열
-  - nvm 감지
-  - 최신 LTS 설치 및 npm 최신화
-  - 설치된 Node major 라인 최신 patch 갱신
-  - npm global package 업데이트
-  - npm/corepack 최신화
-  - pnpm/yarn corepack 활성화
-  - bun 자체 및 bun global package 업데이트
-- Python 계열
-  - Homebrew Python은 brew에서 처리
-  - uv tools 업데이트
-  - pipx 업데이트
-  - Python user package outdated 확인 및 일괄 업데이트
-  - pip/setuptools/wheel 업데이트
-  - pyenv 자체 업데이트 감지
-- AI/dev CLI
+  - `--install-helpers` can install `mas` with Homebrew if missing
+- Node ecosystem
+  - detects nvm
+  - installs the latest LTS and latest npm
+  - updates installed Node major lines to their latest patch versions
+  - updates npm global packages
+  - updates npm/corepack
+  - activates latest pnpm and stable yarn through corepack
+  - updates bun and bun global packages
+- Python ecosystem
+  - Homebrew Python is handled by Homebrew
+  - upgrades uv tools
+  - upgrades pipx packages
+  - checks and upgrades Python user packages
+  - upgrades pip/setuptools/wheel in the user site
+  - detects and updates pyenv itself
+- AI/dev CLIs
   - Claude Code: `claude update`
   - Hermes: `hermes update --yes`
   - OpenCode: `opencode upgrade`
-  - Codex: Homebrew 관리 대상이면 brew에서 처리
-  - Pi: npm global package면 npm update에서 처리
-  - Ollama: CLI/App 감지, 모델 pull은 옵션화
+  - Codex: handled by Homebrew when installed as a Homebrew package
+  - Pi: handled by `npm update -g` when installed as an npm global package
+  - Ollama: detects CLI/app; model pulling is opt-in with `--ollama-models`
 
 ### `mac-system-update`
 
-macOS 시스템 업데이트 전용입니다.
+Dedicated macOS system update command.
 
 ```bash
 mac-system-update --check
@@ -190,61 +192,61 @@ mac-system-update --download
 mac-system-update --install
 ```
 
-내부적으로 다음을 사용합니다.
+It uses:
 
 - `softwareupdate -l`
 - `softwareupdate --download --all`
 - `softwareupdate --install --all`
 
-강제 재시작 옵션은 쓰지 않습니다.
+It does not use a forced restart flag.
 
-## 안전 정책
+## Safety policy
 
-자동화하되, 개발 환경을 망가뜨리지 않는 쪽을 우선합니다.
+The tool automates aggressively, but it should not trash a development machine.
 
-하지 않는 것:
+It does not:
 
-- `softwareupdate --restart`로 강제 재시작
-- `/usr/bin/python3`나 `/usr/bin/gem` 같은 macOS 시스템 영역을 sudo로 강제 수정
-- `.dmg`/`.pkg`로 설치된 GUI 앱 번들을 임의 교체
-- pyenv Python 새 버전을 프로젝트 호환성 검증 없이 자동 설치
+- force restarts with `softwareupdate --restart`
+- use `sudo` to mutate Apple-managed system tools like `/usr/bin/python3` or `/usr/bin/gem`
+- replace standalone GUI app bundles installed via `.dmg` / `.pkg`
+- automatically install new pyenv Python versions without project compatibility checks
 
-대신 하는 것:
+It does:
 
-- Homebrew/App Store/npm/pipx/uv/bun처럼 package manager가 책임지는 경로를 업데이트
-- standalone 앱은 감지하고 로그에 남김
-- 필요한 권한 요청은 실행 중 사용자 동의로 처리
+- update package-manager-owned software through Homebrew, App Store, npm, pipx, uv, bun, and similar managers
+- detect standalone apps and log them
+- let macOS or the relevant CLI ask for permission during execution when needed
 
-## 개발
+## Development
 
-문법 검사:
+Syntax check:
 
 ```bash
 bash -n bin/*.command install.sh
 ```
 
-개인 경로/API key/token 유출 검사:
+Privacy/security scan for personal paths, API keys, and tokens:
 
 ```bash
 scripts/security-scan.sh
 ```
 
-public push 전에는 반드시 이 검사를 통과해야 합니다. 현재 파일만 고치는 것으로 부족하고, git history에 남은 경우 history도 정리해야 합니다.
+This scan must pass before public pushes. If a value is found in git history, fixing the current file is not enough; rewrite the history before pushing.
 
-체크 실행:
+Check runs:
 
 ```bash
 bin/software-update.command --check
 bin/system-update.command --check
 ```
 
-설치 테스트:
+Install test:
 
 ```bash
 ./install.sh
 mac-update-all --help
 ```
 
-## 라이선스
+## License
 
 MIT
