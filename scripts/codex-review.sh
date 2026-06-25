@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Run the mandatory OpenAI Codex review gate.
-# Intended workflow: Claude Code (or another agent) may implement changes, but Codex reviews before push/release.
+# Run the independent OpenAI Codex review gate and save a public-safe report.
 
 set -euo pipefail
 
@@ -19,12 +18,23 @@ fi
 mkdir -p "$REVIEW_DIR"
 
 say() { printf '\033[1;36m==> %s\033[0m\n' "$*"; }
-warn() { printf '\033[1;33mWARN: %s\033[0m\n' "$*"; }
 
 sanitize_output() {
-  # Codex output can include local absolute paths. Review reports are committed
-  # for workflow changes, so sanitize home directories before writing them.
-  sed -E "s#${HOME}#~#g; s#/Users/[A-Za-z0-9._-]+#~#g; s#/home/[A-Za-z0-9._-]+#~#g"
+  # Codex output can include local absolute paths. Review reports are public
+  # artifacts, so keep them free of personal home directories and obvious tokens.
+  sed -E \
+    -e "s#${HOME}#~#g" \
+    -e "s#/Users/[A-Za-z0-9._-]+#~#g" \
+    -e "s#/home/[A-Za-z0-9._-]+#~#g" \
+    -e "s#ghp_[A-Za-z0-9_]+#ghp_[REDACTED]#g" \
+    -e "s#gho_[A-Za-z0-9_]+#gho_[REDACTED]#g" \
+    -e "s#github_pat_[A-Za-z0-9_]+#github_pat_[REDACTED]#g" \
+    -e "s#Bearer[[:space:]]+[A-Za-z0-9._~+/=-]+#Bearer [REDACTED]#g" \
+    -e "s#sk-[A-Za-z0-9]{20,}#sk-[REDACTED]#g" \
+    -e "s#xox[baprs]-[A-Za-z0-9-]+#xox[REDACTED]#g" \
+    -e "s#AKIA[0-9A-Z]{16}#AKIA[REDACTED]#g" \
+    -e "s#BEGIN[[:space:]]+[A-Z ]*PRIVATE KEY#BEGIN [REDACTED PRIVATE KEY LABEL]#g" \
+    -e "s#[[:blank:]]+\$##g"
 }
 
 if ! command -v codex >/dev/null 2>&1; then
@@ -34,7 +44,6 @@ if ! command -v codex >/dev/null 2>&1; then
 fi
 
 say "Pre-review local checks"
-bash -n bin/*.command install.sh scripts/*.sh
 scripts/security-scan.sh
 
 say "Running OpenAI Codex review"
@@ -47,13 +56,10 @@ echo "Review output: $OUT_FILE"
   echo
   echo "## Required review checklist"
   echo
-  sed -n '/^## Mandatory checklist/,$p' docs/code-review.md
+  cat docs/code-review.md
   echo
   echo "## Output"
   echo
-  # Codex CLI's `review --uncommitted` currently rejects a custom prompt on this install,
-  # so the checklist is written into the report and the project instructions live in
-  # CLAUDE.md / AGENTS.md / docs/code-review.md for Codex to read from the repository.
   codex review "${MODE_ARGS[@]}"
 } 2>&1 | sanitize_output | tee "$OUT_FILE"
 

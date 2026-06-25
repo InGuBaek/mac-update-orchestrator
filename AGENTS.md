@@ -43,11 +43,21 @@ Priorities, in order:
 - `scripts/security-scan.sh`
   - Scans tracked, untracked, and historical content for obvious personal paths and secrets.
 - `scripts/codex-review.sh`
-  - Runs the mandatory OpenAI Codex review gate.
+  - Runs the mandatory general OpenAI Codex review gate.
+- `scripts/doc-impact-check.sh`
+  - Fails when behavior/workflow files change without matching documentation updates.
+- `scripts/e2e-check.sh`
+  - Runs non-mutating end-to-end smoke checks.
+- `tests/`
+  - Local shell tests for governance and smoke checks.
 - `docs/code-review.md`
   - Review process and checklist.
 - `docs/improvements.md`
   - Design evolution and future improvements.
+- `docs/research-and-roadmap.md`
+  - Comparable project research and AI-era development plan.
+- `docs/i18n/`
+  - Localized quickstart entry points for major GitHub/developer audiences.
 - `docs/reviews/`
   - Codex review reports for release, installer, security-sensitive, or workflow changes.
 - `.github/CODEOWNERS`
@@ -102,6 +112,8 @@ Run these before committing meaningful changes:
 ```bash
 bash -n bin/*.command install.sh scripts/*.sh
 scripts/security-scan.sh
+scripts/doc-impact-check.sh
+tests/run.sh
 ```
 
 For behavior changes, also run:
@@ -109,6 +121,7 @@ For behavior changes, also run:
 ```bash
 bin/software-update.command --check
 bin/system-update.command --check
+mac-update-all --check --no-install-helpers
 ./install.sh
 mac-update-all --help
 ```
@@ -128,6 +141,18 @@ scripts/codex-review.sh
 If Codex returns `FAIL`, do not push until blocking issues are fixed or explicitly documented as accepted risk.
 
 The review checklist lives in `docs/code-review.md`. Update it whenever the review criteria change. `README.md` and `README.ko.md` must mention review workflow changes that affect contributors.
+
+## Documentation impact check
+
+When code, CLI behavior, installer behavior, CI, or workflow rules change, update the relevant docs in the same branch.
+
+Run:
+
+```bash
+scripts/doc-impact-check.sh
+```
+
+This is a mechanical drift guard, not a replacement for maintainer judgement. Keep review infrastructure lightweight so it does not distract from the updater itself.
 
 ## GitHub workflow
 
@@ -151,6 +176,7 @@ Direct pushes to `main` are not the normal workflow after branch protection is e
 
 - `README.md` is English and is the default public README.
 - `README.ko.md` is Korean and must link back to `README.md`.
+- `docs/i18n/` contains short localized quickstarts for major GitHub/developer audiences. These are entry points, not replacements for canonical docs.
 - `CLAUDE.md` is intentionally thin and points Claude Code to this file.
 - Keep public-facing behavior documented in both READMEs.
 - Keep implementation/review rules in this file and `docs/code-review.md`.

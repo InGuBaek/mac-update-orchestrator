@@ -82,6 +82,12 @@ Answer yes where possible:
 mac-update-all --yes
 ```
 
+Do not auto-install helper tools such as `mas` while checking or updating:
+
+```bash
+mac-update-all --check --no-install-helpers
+```
+
 Also pull all installed Ollama models:
 
 ```bash
@@ -247,6 +253,9 @@ Contribution workflow:
 - Use pull requests for changes to `main`.
 - `main` is protected with required maintainer approval and CI checks.
 - See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the public contribution flow.
+- Short localized quickstarts live under [`docs/i18n/`](docs/i18n/).
+- When code changes affect README behavior, run `scripts/doc-impact-check.sh` so documentation drift is caught before review/merge.
+- Meaningful changes should receive independent Codex review before push or release. Review reports may be stored under `docs/reviews/`, and the checklist lives in [`docs/code-review.md`](docs/code-review.md).
 
 Check runs:
 
