@@ -6,3 +6,9 @@ logs/
 # editor swap files
 *.swp
 *.swo
+
+# local handoff/checkpoint notes
+/docs/handoff-*.md
+
+# local Hermes checkpoints
+.hermes-checkpoints/

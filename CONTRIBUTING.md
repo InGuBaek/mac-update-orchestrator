@@ -11,8 +11,10 @@ Read `AGENTS.md` first. It is the canonical operating guide.
 3. Run local checks:
 
 ```bash
-bash -n bin/*.command install.sh scripts/*.sh
+bash -n bin/*.command install.sh scripts/*.sh tests/*.sh
 scripts/security-scan.sh
+scripts/doc-impact-check.sh
+tests/run.sh
 ```
 
 4. For meaningful behavior, installer, security, workflow, or documentation changes, run:
@@ -23,7 +25,7 @@ scripts/codex-review.sh
 
 5. Commit in logical units.
 6. Open a pull request.
-7. Fill out the PR template.
+7. Fill out the PR template, including the Codex review report path or summary when applicable.
 8. Wait for CI and maintainer approval.
 
 ## Required review model

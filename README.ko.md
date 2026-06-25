@@ -82,6 +82,12 @@ mac-update-all --check
 mac-update-all --yes
 ```
 
+확인/업데이트 중 `mas` 같은 helper tool을 자동 설치하지 않기:
+
+```bash
+mac-update-all --check --no-install-helpers
+```
+
 Ollama 모델까지 모두 pull:
 
 ```bash
@@ -247,6 +253,9 @@ scripts/codex-review.sh
 - `main` 변경은 pull request를 사용합니다.
 - `main`은 maintainer approval과 CI check가 필요한 protected branch입니다.
 - 공개 기여 흐름은 [`CONTRIBUTING.md`](CONTRIBUTING.md)를 참고하세요.
+- 짧은 다국어 quickstart는 [`docs/i18n/`](docs/i18n/) 아래에 있습니다.
+- 코드 변경이 README 동작 설명에 영향을 주면 `scripts/doc-impact-check.sh`를 실행해 문서 drift를 잡습니다.
+- 의미 있는 변경은 push 또는 release 전에 독립 Codex review를 받는 것을 원칙으로 합니다. 리뷰 리포트는 필요하면 `docs/reviews/` 아래에 저장하고, 체크리스트는 [`docs/code-review.md`](docs/code-review.md)에 둡니다.
 
 체크 실행:
 

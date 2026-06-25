@@ -17,7 +17,13 @@ jobs:
           fetch-depth: 0
 
       - name: Syntax check shell scripts
-        run: bash -n bin/*.command install.sh scripts/*.sh
+        run: bash -n bin/*.command install.sh scripts/*.sh tests/*.sh
 
       - name: Privacy/security scan
         run: scripts/security-scan.sh
+
+      - name: Documentation impact check
+        run: DOC_CHECK_BASE=origin/main DOC_CHECK_INCLUDE_WORKTREE=0 scripts/doc-impact-check.sh
+
+      - name: Test suite
+        run: tests/run.sh
